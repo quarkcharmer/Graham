@@ -498,12 +498,48 @@
       (push elem rev))
     rev))
 
-;;the PUSHNEW macro uses ADJOIN:
+;;the PUSHNEW macro uses ADJOIN: n.b. only adds if not already
 (let ((x '(a b)))
-      (pushnew 'z x)
+      (pushnew 'z x) 
       (pushnew 'y x)
       x)
 
+;;DOTTED LISTS**********************************************
+;;proper list  is nil or a cdr which is proper
+(defun proper-list? (lst)
+  (or (null lst)
+      (and (consp lst)
+	   (proper-list? (cdr lst)))))
+
+;;can use CONS  to build any kind of structure->
+(setf pair (cons 'a 'b)) ;;and this gives a DOTTED LIST(A . B)
+;; i,e, not really a list, just a 2-part structure. The cons
+;; for this has both "cells" pointing at a value, not the usual
+;; second pointing at another cons/nil
+;; compare->
+(cons 'a '(b)) ;;which gives a PROPER LIST (A B) as usual
+
+;;ASSOC LISTS***********************************************
+;;using the CONS structure to represent a mapping->
+(setf trans '((+ . add) (- . subtract)
+	      (* . times) (/ . divide)))
+;;use ASSOC  to find the map from a key->
+(assoc '/ trans)   ;;returns (/ . DIVIDE)
+
+;;a simple version of ASSOC could be->
+(defun our-assoc (key trans)
+  (and (consp trans)
+       (let ((pair (car trans)))
+	 (if (eql key (car pair))
+	     pair
+	     (our-assoc key (cdr trans))))))
+
+(our-assoc '* trans)
 
 
+;;EXAMPLE: SHORTEST PATH************************************
+;;******** see separate file: shortest-path.lisp
+;;**********************************************************
+
+;;GARBAGE***************************************************
 
