@@ -488,16 +488,22 @@
 (pop x)  ;;a but y=(a b)
 ;;why can't you do this->
 ;; (push 'z '(a b c))
-;;or this->
+;;or even this->
 ;; (push 'z (list 'a 'b))
 
-;;some odd note to make a file change
+;;using push to define REVERSE->
+(defun our-reverse (lst)
+  (let ((rev nil))
+    (dolist (elem lst)
+      (push elem rev))
+    rev))
 
-;; another note for branch test
+;;the PUSHNEW macro uses ADJOIN:
+(let ((x '(a b)))
+      (pushnew 'z x)
+      (pushnew 'y x)
+      x)
 
-;;check in from emacs
 
-;;changed location of local repository
 
-;;test of branch
 
