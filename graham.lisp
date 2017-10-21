@@ -497,3 +497,5 @@
 
 ;;check in from emacs
 
+;;changed location of local repository
+
