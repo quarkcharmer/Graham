@@ -1,13 +1,29 @@
 
+;;********PAUL GRAHAM - ANSI COMMON LISP***********************
+;;********CHAPTER 2********************************************
+;;The evaluation model for functions is very simple. When the
+;;valuator encounters a form (f a1 a2...) then it presumes that
+;; the symbol named f is one of the following:
+;;1. A "special operator" (easily checked against a fixed list)
+;;2. A "macro operator" (must have been defined previously)
+;;3. "The name of a function" (default), which may either be a
+;;    symbol, or a sub-form beginning with the symbol lambda.
+;;
+;;    If f is the name of a function, then the arguments a1,
+;;    ..a2.., are evaluated in left-to-right order, and the
+;;    function is found and invoked with those values supplied
+;;    as parameters
 
 
-;;********PAUL GRAHAM - ANSI COMMON LISP************************
-;;********CHAPTER 2*********************************************
 
 ;;test example
 (defun negate (X)
   "Negate the value of X."  ; This is a documentation string.
   (- X))
+
+;;what you can't do in C:
+(defun addn (n)
+  #'(lambda (x) (+ x n)))
 
 ;;adding a newline
 (write-line "Hello-World")
@@ -18,7 +34,7 @@
 (write-line "   ")
 (write (/ (* 7.0 (+ 8.0 9.0)) 10.0))
 
-;;defining a function/procedure
+;;defining a function/procedures
 (defun C-to-F (X)
   "convert celsius to fahrenheit"
   (+ 32.0 (* 9 (/ X  5))))
@@ -104,6 +120,13 @@
       (progn
 	(format t "~A squared is: ~A ~%" i (* i i))
 	(show-squares-R (+ i 1) end))))
+
+
+(defun my-factorial ( n)
+  (if (eql n 0)
+      1
+      (* n (my-factorial (- n 1)))))
+
 
 ;;functions as objects
 (function show-squares-R)
@@ -194,6 +217,16 @@
       (loop for w in x
 	  do  (if (eql w 'a)
 		  (return t)))))
+;; extra
+(defun find-any (lst x)
+  (if (null lst)
+      nil
+      (loop for w in lst
+	 do (if (eql w x)
+		(return t)))))
+
+
+		 
 ;; a version using dolist
 (defun find-a-2 (x)
   (if (null x)
@@ -245,7 +278,7 @@
 
 ;;a list is a cons
 (consp '(a b c))
-;;everything elsea list  or an atom:
+;;everything else is a list  or an atom:
 (atom 'a)
 ;;nil is both:
 (atom nil)
@@ -367,7 +400,18 @@
 (maplist #'(lambda(x) x) '(a b c))
 (maplist #'(lambda(x) (car x)) '(a b c d))
 ;;see later for: mapc and mapcan
+(defun addn(n)
+  #'(lambda (x)
+      (+ x n)))
+(funcall (addn 10) 2)
 
+;; functions are first-class objects
+(setq f10 (addn 10))
+(funcall f10 3)
+
+;;or
+(defmacro f5 (n) (+ 5 n))
+(f5 4)
 
 ;;TREES*****************************************************
 ;;tree structure of cons; see diag p 41
@@ -387,8 +431,8 @@
 (defun our-copy-tree (tr)
   (if (atom tr)
       tr
-      (cons (our-copy-tree (car tr))
-	    (our-copy-tree (cdr tr)))))
+      (cons (our-copy-tree (car tr)
+			   (our-copy-tree (cdr tr)))))
 (equal (our-copy-tree '(a (b c) d))
        (copy-tree '(a (b c) d))) ;; T
 
@@ -462,14 +506,20 @@
 
 (mirror?  '(a b c c b a))
 
+;; sort is a higher order function, taking a function
+;; as one of the arguments:
 (sort '( 5 2 7 1 9 3) #'>) ;; nb changes list ! so:
 (sort (copy-list '(5 2 7 1 9 3)) #'>)
+(sort '(a z b e c)  #'string< :key #'symbol-name)
 
 (defun nth-most (n lst)
   (nth (- n 1)  ;; n is indexed from 0
        (sort ( copy-list lst) #'>)))
 
 (nth-most 3 '( 9 1 6 5 8 0))  ;;returns 6
+
+(defun pair-sum (p)(+ (first p) (second p)))
+(sort (list '(9 2) '( 6 7)) #'< :key 'pair-sum)
 
 ;; EVERY and SOME:
 (every #'evenp '( 1 2 3 4 5 6)) ;; nil as not all are even
@@ -478,7 +528,7 @@
 ;;STACKS****************************************************
 ;; can define push:
 (setf lst (cons 'a '(b c)))
-(push 'z lst)  ;; ( z a b c)
+(push 'z lst)  ;; ( z a (b c))
 ;; and pop:
 (let ((x (car lst)))
   (setf lst (cdr lst)) x)  ;; z
@@ -510,7 +560,6 @@
   (or (null lst)
       (and (consp lst)
 	   (proper-list? (cdr lst)))))
-
 ;;can use CONS  to build any kind of structure->
 (setf pair (cons 'a 'b)) ;;and this gives a DOTTED LIST(A . B)
 ;; i,e, not really a list, just a 2-part structure. The cons
@@ -525,6 +574,9 @@
 	      (* . times) (/ . divide)))
 ;;use ASSOC  to find the map from a key->
 (assoc '/ trans)   ;;returns (/ . DIVIDE)
+;; assoc returns the FIRST CONS in the alist whose 
+;; CAR satisfies the test; in the example the 'default test'
+;; is equal to the key symbol /
 
 ;;a simple version of ASSOC could be->
 (defun our-assoc (key trans)
@@ -542,4 +594,119 @@
 ;;**********************************************************
 
 ;;GARBAGE***************************************************
+;; slower traversing lis versus array acccess
+;; automatic memory management
+;; memory allocation from heap "consing"
+;; garbage collection
+;; too much consing? use DESTRUCTIVE FUNCTIONS, see later
+;;**********************************************************
+;;********EXERCISES on Chapter 3 ***************************
+;;
+;;ex2 new union preserving order->
+(defun new-union ( x y)
+  (if (or (null x) (null y))
+      nil
+      (append (list (car x) (car y) )
+	      (new-union (cdr x) (cdr y)))));; bootiful
+
+;;ex3 number times each item appears in a list->
+(defun my_occurrences ( lst )
+  (setq occ_lst ()) 
+  (setq lst_len (length lst))
+  (dolist  (elem lst)
+    (if (not (null (assoc elem occ_lst)))
+	(continue);;avoid repetition of cases
+	(progn
+	  (setq n (- lst_len (length (remove elem lst))))
+	  (setq occ_lst (append occ_lst
+				(list  (cons elem n)))))))
+  occ_lst)
+;; this took many hours - half to find the idea
+;; mostly being fixed on one approach and slowly realising
+;; it generated too many problems: viz iterating across the
+;; list and counting as you go. Chuffed at finding this
+;; solution
+
+(sort (my_occurrences '(a b c a z s z f g a b)) #'string< :key #'car) ;; puts the analysis in alphabetical order
+  
+
+
+;;ex4: because (a) is a member of '((a) (b)) not 'a
+;;ex5 adds its position to a list of numbers
+;;(i) by iteration
+(defun pos+ (lst);;*** must be a better way !!!********
+  (progn
+    (setq n 1)
+    (setq new_lst ())
+    (dolist (elem lst)
+      (progn
+	(setq new_lst (append new_lst (list (+ elem n))))
+	(setq n (1+ n))
+	))
+    new_lst))
+
+;;(ii) by recursion->
+(defun pos+rec (lst)
+  (cond
+    ((null lst) nil)
+    ( t (cons (1+ (car lst))  (pos+rec (cdr lst))))))
+
+;; slightly different exercise of finding position of
+;; an item in a list...i found with Google
+(defun position-in-list (letter liste)
+   (cond
+      ((atom liste) nil)
+      ((equal letter (car liste)) 0)
+      ((position-in-list letter (cdr liste)) (+ 1
+	     (position-in-list letter (cdr liste))))))
+
+;;*****************CHAPTER 4********************************
+;;********ARRAYS and VECTORS************
+(setf arr (make-array '(2 2) :initial-element 1))
+;; access
+(aref arr 0 1)
+(setf (aref arr 0 1) 2)
+;; to print an array, set the global var:->
+(setf *print-array* t)
+;; it will print using the #n syntax:
+arr --> #2((1 2) (1 1))
+
+;;pseudo-vector: single row array:->
+(setf p-vec (make-array 5 :initial-element 'w))
+
+;; but better is a vector:->
+(setf vec (vector 1 'e 3 'x))
+;; and access it using:->
+(svref vec 2)
+
+;;*********STRINGS & CHARACTERS**********
+;; Strings are vectors of characters: constant string in double Quotes
+;; and character c -> #\c
+(char-code #\a) ;; returns number for 'a
+(code-char 97) ;; returns #\
+;;character relations->
+;; char<,char=,char>,char>=,char<= and char/=
+(sort "elbow" #'char<)
+;;strings are vectors so->
+(aref "name" 2) ;;returns #\m...n.b index from 0
+;;quicker is->
+(char "wobbly" 3) ;;returns #\b
+;; and can use setf or aref to replace a char in a string
+(let ((str (copy-seq "man")))
+  (setf (char str 2) #\d)
+  str)
+;; and to compare strings->
+(string-equal "fred" "FRED") ;; case independent
+
+;;to build strings, output to nil->
+(format nil "~A~A" "jock" "ey")
+;;or ->
+(concatenate 'string "hello " "world")
+
+;;*********SEQUENCES*********************
+(setf vec2 (vector 1 2 3 4))
+
+
+
+
 
